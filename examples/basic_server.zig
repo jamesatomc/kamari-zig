@@ -1,8 +1,6 @@
 const std = @import("std");
 const print = std.debug.print;
-const Server = @import("server.zig").Server;
-const Router = @import("router.zig").Router;
-const middleware = @import("middleware.zig");
+const kamari = @import("kamari");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -10,17 +8,17 @@ pub fn main() !void {
     const allocator = gpa.allocator();
 
     // Create server instance
-    var server = Server.init(allocator);
+    var server = kamari.Server.init(allocator);
     defer server.deinit();
 
     // Create router
-    var router = Router.init(allocator);
+    var router = kamari.Router.init(allocator);
     defer router.deinit();
 
     // Add middleware
-    try router.use(middleware.cors);
-    try router.use(middleware.logger);
-    try router.use(middleware.jsonParser);
+    try router.use(kamari.middleware.cors);
+    try router.use(kamari.middleware.logger);
+    try router.use(kamari.middleware.jsonParser);
 
     // Define routes
     try setupRoutes(&router);
@@ -29,7 +27,7 @@ pub fn main() !void {
     try server.listen("127.0.0.1", 8080, &router);
 }
 
-fn setupRoutes(router: *Router) !void {
+fn setupRoutes(router: *kamari.Router) !void {
     // API routes
     try router.get("/", handleHome);
     try router.get("/api/health", handleHealth);
@@ -41,19 +39,21 @@ fn setupRoutes(router: *Router) !void {
 }
 
 // Route handlers
-fn handleHome(req: *const @import("types.zig").Request, res: *@import("types.zig").Response) !void {
+fn handleHome(req: *const kamari.Request, res: *kamari.Response) !void {
     _ = req;
     const WelcomeResponse = struct {
         message: []const u8,
         version: []const u8,
+        framework_version: []const u8,
         endpoints: struct {
             health: []const u8,
             users: []const u8,
         },
     };
     const welcome_data = WelcomeResponse{
-        .message = "Welcome to Zig API Framework",
+        .message = "Welcome to Kamari-Zig Framework",
         .version = "1.0.0",
+        .framework_version = kamari.version,
         .endpoints = .{
             .health = "/api/health",
             .users = "/api/users",
@@ -62,22 +62,24 @@ fn handleHome(req: *const @import("types.zig").Request, res: *@import("types.zig
     try res.json(welcome_data);
 }
 
-fn handleHealth(req: *const @import("types.zig").Request, res: *@import("types.zig").Response) !void {
+fn handleHealth(req: *const kamari.Request, res: *kamari.Response) !void {
     _ = req;
     const HealthResponse = struct {
         status: []const u8,
         timestamp: i64,
         uptime: []const u8,
+        framework: []const u8,
     };
     const health_data = HealthResponse{
         .status = "ok",
         .timestamp = std.time.timestamp(),
         .uptime = "running",
+        .framework = "kamari-zig v" ++ kamari.version,
     };
     try res.json(health_data);
 }
 
-fn handleGetUsers(req: *const @import("types.zig").Request, res: *@import("types.zig").Response) !void {
+fn handleGetUsers(req: *const kamari.Request, res: *kamari.Response) !void {
     _ = req;
     const User = struct {
         id: u32,
@@ -96,7 +98,7 @@ fn handleGetUsers(req: *const @import("types.zig").Request, res: *@import("types
     try res.json(users_data);
 }
 
-fn handleCreateUser(req: *const @import("types.zig").Request, res: *@import("types.zig").Response) !void {
+fn handleCreateUser(req: *const kamari.Request, res: *kamari.Response) !void {
     // Parse JSON body
     if (req.body) |body| {
         print("Creating user with data: {s}\n", .{body});
@@ -122,7 +124,7 @@ fn handleCreateUser(req: *const @import("types.zig").Request, res: *@import("typ
     }
 }
 
-fn handleGetUser(req: *const @import("types.zig").Request, res: *@import("types.zig").Response) !void {
+fn handleGetUser(req: *const kamari.Request, res: *kamari.Response) !void {
     if (req.params.get("id")) |id| {
         const UserResponse = struct {
             id: u32,
@@ -143,7 +145,7 @@ fn handleGetUser(req: *const @import("types.zig").Request, res: *@import("types.
     }
 }
 
-fn handleUpdateUser(req: *const @import("types.zig").Request, res: *@import("types.zig").Response) !void {
+fn handleUpdateUser(req: *const kamari.Request, res: *kamari.Response) !void {
     if (req.params.get("id")) |id| {
         if (req.body) |body| {
             print("Updating user {s} with data: {s}\n", .{ id, body });
@@ -170,7 +172,7 @@ fn handleUpdateUser(req: *const @import("types.zig").Request, res: *@import("typ
     }
 }
 
-fn handleDeleteUser(req: *const @import("types.zig").Request, res: *@import("types.zig").Response) !void {
+fn handleDeleteUser(req: *const kamari.Request, res: *kamari.Response) !void {
     if (req.params.get("id")) |id| {
         print("Deleting user {s}\n", .{id});
         _ = res.status(204);
@@ -181,8 +183,4 @@ fn handleDeleteUser(req: *const @import("types.zig").Request, res: *@import("typ
         _ = res.status(400);
         try res.json(error_data);
     }
-}
-
-test "API Framework Tests" {
-    std.testing.refAllDecls(@This());
 }
