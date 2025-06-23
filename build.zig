@@ -4,45 +4,24 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // Create the API library module
-    const lib_mod = b.createModule(.{
-        .root_source_file = b.path("src/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    // Create the executable module
-    const exe_mod = b.createModule(.{
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    // Add the library as a dependency to the executable
-    exe_mod.addImport("api_lib", lib_mod);
-
-    // Create the library
-    const lib = b.addLibrary(.{
-        .name = "api",
-        .root_source_file = b.path("src/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    // Create the executable
+    // Create the main executable
     const exe = b.addExecutable(.{
-        .name = "api-server",
+        .name = "api",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
-    exe.root_module.addImport("api_lib", lib_mod);
 
-    // Install artifacts
-    b.installArtifact(lib);
+    // Add dependencies if needed
+    // const dep = b.dependency("dependency_name", .{
+    //     .target = target,
+    //     .optimize = optimize,
+    // });
+    // exe.root_module.addImport("dependency_name", dep.module("dependency_name"));
+
     b.installArtifact(exe);
 
-    // Run command
+    // Create run step
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| {
@@ -52,25 +31,14 @@ pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "Run the API server");
     run_step.dependOn(&run_cmd.step);
 
-    // Tests
-    const lib_unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
-
-    const exe_unit_tests = b.addTest(.{
+    // Create test step
+    const unit_tests = b.addTest(.{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
-    exe_unit_tests.root_module.addImport("api_lib", lib_mod);
 
-    const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
-
+    const run_unit_tests = b.addRunArtifact(unit_tests);
     const test_step = b.step("test", "Run unit tests");
-    test_step.dependOn(&run_lib_unit_tests.step);
-    test_step.dependOn(&run_exe_unit_tests.step);
+    test_step.dependOn(&run_unit_tests.step);
 }
