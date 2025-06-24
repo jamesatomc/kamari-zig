@@ -34,6 +34,9 @@ pub const RouteHandler = @import("types.zig").RouteHandler;
 pub const MiddlewareHandler = @import("types.zig").MiddlewareHandler;
 pub const Headers = @import("types.zig").Headers;
 
+// Re-export server types
+pub const ServerConfig = @import("server.zig").ServerConfig;
+
 // Re-export main components
 pub const Server = @import("server.zig").Server;
 pub const Router = @import("router.zig").Router;
