@@ -55,7 +55,6 @@ git clone https://github.com/jamesatomc/kamari-zig.git
 
 ## Quick Start
 
-```zig
 const std = @import("std");
 const kamari = @import("kamari");
 
@@ -110,11 +109,13 @@ fn handleUser(req: *const kamari.Request, res: *kamari.Response) !void {
 }
 
 fn handleCreateUser(req: *const kamari.Request, res: *kamari.Response) !void {
+    _ = req; // Mark req as used to avoid unused parameter warning
     // Handle POST data from req.body
     const data = .{ .message = "User created", .id = 123 };
     _ = res.status(201);
     try res.json(data);
 }
+
 ```
 
 ## API Documentation

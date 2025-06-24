@@ -125,12 +125,19 @@ fn handleHome(req: *const kamari.Request, res: *kamari.Response) !void {
 
 fn handleHello(req: *const kamari.Request, res: *kamari.Response) !void {
     const name = req.params.get("name") orelse "World";
+
+    // ใช้ allocator สำหรับ string concatenation
+    const allocator = std.heap.page_allocator;
+    const greeting = try std.fmt.allocPrint(allocator, "Hello, {s}!", .{name});
+    defer allocator.free(greeting);
+
     const data = .{
-        .greeting = "Hello, " ++ name ++ "!",
+        .greeting = greeting,
         .timestamp = std.time.timestamp(),
     };
     try res.json(data);
 }
+
 ```
 
 ## Step 5: Build and run
