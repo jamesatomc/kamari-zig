@@ -45,7 +45,7 @@ pub const middleware = @import("middleware.zig");
 pub const utils = @import("utils.zig");
 
 // Version information
-pub const version = "0.1.0";
+pub const version = "0.1.1";
 
 // Library tests
 test {

@@ -21,11 +21,14 @@ Add kamari-zig to your `build.zig.zon`:
 .{
     .name = "your-project",
     .version = "0.1.0",
+    .minimum_zig_version = "0.14.1",
     .dependencies = .{
         .kamari = .{
-            .url = "https://github.com/jamesatomc/kamari-zig.git",
+            .url = "https://github.com/jamesatomc/kamari-zig/archive/main.tar.gz",
+            // Hash will be computed automatically when you run `zig build`
         },
     },
+}
 }
 ```
 
