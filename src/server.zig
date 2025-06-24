@@ -52,7 +52,7 @@ pub const Server = struct {
     pub fn stop(self: *Server) void {
         self.running.store(false, .monotonic);
     }
-    
+
     pub fn listen(self: *Server, host: []const u8, port: u16) !void {
         if (self.router == null) {
             return ServerError.NoRouterConfigured;

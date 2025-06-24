@@ -19,13 +19,15 @@ Add kamari-zig to your `build.zig.zon`:
 
 ```zon
 .{
-    .name = "your-project",
+    .name = .apiserver,
     .version = "0.1.0",
+    .fingerprint = 0xde9d4c86ff906cdd,
     .minimum_zig_version = "0.14.1",
     .dependencies = .{
         .kamari = .{
             .url = "https://github.com/jamesatomc/kamari-zig/archive/main.tar.gz",
-            // Hash will be computed automatically when you run `zig build`
+            .hash = "kamari-0.1.1-3WyQ_1zQAACeX742sPvTR1AoqcvEZA4_6ZXZo6z5qsFi",
+            // Hash จะถูกคำนวณอัตโนมัติเมื่อคุณรัน `zig build`
         },
     },
 }
@@ -53,7 +55,6 @@ git clone https://github.com/jamesatomc/kamari-zig.git
 
 ## Quick Start
 
-```zig
 const std = @import("std");
 const kamari = @import("kamari");
 
@@ -62,8 +63,18 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
+    // Create server configuration
+    const config = kamari.ServerConfig{
+        .max_connections = 100,
+        .buffer_size = 8192,
+        .timeout_ms = 30000,
+        .enable_logging = true,
+        .cors_enabled = true,
+        .max_body_size = 1024 * 1024, // 1MB
+    };
+
     // Create server and router
-    var server = kamari.Server.init(allocator);
+    var server = kamari.Server.init(allocator, config);
     defer server.deinit();
 
     var router = kamari.Router.init(allocator);
@@ -78,8 +89,11 @@ pub fn main() !void {
     try router.get("/users/:id", handleUser);
     try router.post("/users", handleCreateUser);
 
+    // Set router to server
+    server.setRouter(&router);
+
     // Start server
-    try server.listen("127.0.0.1", 8080, &router);
+    try server.listen("127.0.0.1", 8080);
 }
 
 fn handleHome(req: *const kamari.Request, res: *kamari.Response) !void {
@@ -95,11 +109,13 @@ fn handleUser(req: *const kamari.Request, res: *kamari.Response) !void {
 }
 
 fn handleCreateUser(req: *const kamari.Request, res: *kamari.Response) !void {
+    _ = req; // Mark req as used to avoid unused parameter warning
     // Handle POST data from req.body
     const data = .{ .message = "User created", .id = 123 };
     _ = res.status(201);
     try res.json(data);
 }
+
 ```
 
 ## API Documentation
@@ -107,8 +123,19 @@ fn handleCreateUser(req: *const kamari.Request, res: *kamari.Response) !void {
 ### Server
 
 ```zig
-const server = kamari.Server.init(allocator);
-try server.listen("127.0.0.1", 8080, &router);
+// Create server configuration
+const config = kamari.ServerConfig{
+    .max_connections = 100,
+    .buffer_size = 8192,
+    .timeout_ms = 30000,
+    .enable_logging = true,
+    .cors_enabled = true,
+    .max_body_size = 1024 * 1024, // 1MB
+};
+
+const server = kamari.Server.init(allocator, config);
+server.setRouter(&router);
+try server.listen("127.0.0.1", 8080);
 ```
 
 ### Router
