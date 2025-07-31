@@ -27,7 +27,7 @@ Add kamari-zig to your `build.zig.zon`:
         .kamari = .{
             .url = "https://github.com/jamesatomc/kamari-zig/archive/main.tar.gz",
             .hash = "kamari-0.1.1-3WyQ_1zQAACeX742sPvTR1AoqcvEZA4_6ZXZo6z5qsFi",
-            // Hash จะถูกคำนวณอัตโนมัติเมื่อคุณรัน `zig build`
+            // The hash will be calculated automatically when you run `zig build`.
         },
     },
 }
