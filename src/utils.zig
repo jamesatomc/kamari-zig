@@ -22,14 +22,14 @@ pub fn stringifyJson(value: anytype, allocator: std.mem.Allocator) ![]u8 {
 
 // URL encoding/decoding utilities
 pub fn urlEncode(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
-    var result: std.ArrayList(u8) = .empty;
-    defer result.deinit(allocator);
+    var result = std.ArrayList(u8).init(allocator);
+    defer result.deinit();
 
     for (input) |char| {
         if (std.ascii.isAlphanumeric(char) or char == '-' or char == '_' or char == '.' or char == '~') {
-            try result.append(allocator, char);
+            try result.append(char);
         } else {
-            try result.writer(allocator).print("%{X:0>2}", .{char});
+            try result.writer().print("%{x:0>2}", .{char});
         }
     }
 
@@ -37,8 +37,8 @@ pub fn urlEncode(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
 }
 
 pub fn urlDecode(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
-    var result: std.ArrayList(u8) = .empty;
-    defer result.deinit(allocator);
+    var result = std.ArrayList(u8).init(allocator);
+    defer result.deinit();
 
     var i: usize = 0;
     while (i < input.len) {
@@ -49,13 +49,13 @@ pub fn urlDecode(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
                 i += 1;
                 continue;
             };
-            try result.append(allocator, decoded_char);
+            try result.append(decoded_char);
             i += 3;
         } else if (input[i] == '+') {
-            try result.append(allocator, ' ');
+            try result.append(' ');
             i += 1;
         } else {
-            try result.append(allocator, input[i]);
+            try result.append(input[i]);
             i += 1;
         }
     }
