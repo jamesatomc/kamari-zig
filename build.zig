@@ -3,20 +3,24 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{}); // Create the kamari library module
-    const kamari_module = b.addModule("kamari", .{
+    const kamari_module = b.createModule(.{
         .root_source_file = b.path("src/kamari.zig"),
         .target = target,
         .optimize = optimize,
     });
 
     // Create example executable
-    const example_exe = b.addExecutable(.{
-        .name = "kamari-zig-example",
+    const example_mod = b.createModule(.{
         .root_source_file = b.path("examples/basic_server.zig"),
         .target = target,
         .optimize = optimize,
     });
-    example_exe.root_module.addImport("kamari", kamari_module);
+    example_mod.addImport("kamari", kamari_module);
+
+    const example_exe = b.addExecutable(.{
+        .name = "kamari-zig-example",
+        .root_module = example_mod,
+    });
     b.installArtifact(example_exe);
 
     // Create run step for example
@@ -30,11 +34,8 @@ pub fn build(b: *std.Build) void {
 
     // Create test step
     const unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/kamari.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = kamari_module,
     });
-    unit_tests.root_module.addImport("kamari", kamari_module);
 
     const run_unit_tests = b.addRunArtifact(unit_tests);
     const test_step = b.step("test", "Run unit tests");
