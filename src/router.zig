@@ -39,19 +39,19 @@ pub const Router = struct {
 
     pub fn init(allocator: std.mem.Allocator) Router {
         return Router{
-            .routes = std.ArrayList(Route).init(allocator),
-            .middlewares = std.ArrayList(Middleware).init(allocator),
+            .routes = .empty,
+            .middlewares = .empty,
             .allocator = allocator,
         };
     }
 
     pub fn deinit(self: *Router) void {
-        self.routes.deinit();
-        self.middlewares.deinit();
+        self.routes.deinit(self.allocator);
+        self.middlewares.deinit(self.allocator);
     }
 
     pub fn use(self: *Router, middleware: MiddlewareHandler) !void {
-        try self.middlewares.append(Middleware.init(middleware));
+        try self.middlewares.append(self.allocator, Middleware.init(middleware));
     }
 
     pub fn get(self: *Router, path: []const u8, handler: RouteHandler) !void {
@@ -76,7 +76,7 @@ pub const Router = struct {
 
     fn addRoute(self: *Router, method: HttpMethod, path: []const u8, handler: RouteHandler) !void {
         const route = Route.init(method, path, handler);
-        try self.routes.append(route);
+        try self.routes.append(self.allocator, route);
     }
 
     pub fn handle(self: *Router, req: *Request, res: *Response) !void {

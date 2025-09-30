@@ -17,21 +17,19 @@ pub fn parseJson(comptime T: type, allocator: std.mem.Allocator, json_string: []
 }
 
 pub fn stringifyJson(value: anytype, allocator: std.mem.Allocator) ![]u8 {
-    var string = std.ArrayList(u8).init(allocator);
-    try std.json.stringify(value, .{}, string.writer());
-    return string.toOwnedSlice();
+    return try std.json.Stringify.valueAlloc(allocator, value, .{});
 }
 
 // URL encoding/decoding utilities
 pub fn urlEncode(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
-    var result = std.ArrayList(u8).init(allocator);
-    defer result.deinit();
+    var result: std.ArrayList(u8) = .empty;
+    defer result.deinit(allocator);
 
     for (input) |char| {
         if (std.ascii.isAlphanumeric(char) or char == '-' or char == '_' or char == '.' or char == '~') {
-            try result.append(char);
+            try result.append(allocator, char);
         } else {
-            try result.writer().print("%{X:0>2}", .{char});
+            try result.writer(allocator).print("%{X:0>2}", .{char});
         }
     }
 
@@ -39,8 +37,8 @@ pub fn urlEncode(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
 }
 
 pub fn urlDecode(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
-    var result = std.ArrayList(u8).init(allocator);
-    defer result.deinit();
+    var result: std.ArrayList(u8) = .empty;
+    defer result.deinit(allocator);
 
     var i: usize = 0;
     while (i < input.len) {
@@ -51,13 +49,13 @@ pub fn urlDecode(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
                 i += 1;
                 continue;
             };
-            try result.append(decoded_char);
+            try result.append(allocator, decoded_char);
             i += 3;
         } else if (input[i] == '+') {
-            try result.append(' ');
+            try result.append(allocator, ' ');
             i += 1;
         } else {
-            try result.append(input[i]);
+            try result.append(allocator, input[i]);
             i += 1;
         }
     }

@@ -385,8 +385,8 @@ pub const Server = struct {
     }
 
     fn sendErrorResponse(self: *Server, stream: net.Stream, status: HttpStatus, message: []const u8) !void {
-        var response = std.ArrayList(u8).init(self.allocator);
-        defer response.deinit();
+        var response: std.ArrayList(u8) = .empty;
+        defer response.deinit(self.allocator);
 
         const status_code = @intFromEnum(status);
         const status_text = @tagName(status);
@@ -396,62 +396,62 @@ pub const Server = struct {
         defer self.allocator.free(error_json);
 
         // Build response
-        try response.writer().print("HTTP/1.1 {d} {s}\r\n", .{ status_code, status_text });
-        try response.writer().print("Content-Type: application/json\r\n", .{});
-        try response.writer().print("Content-Length: {d}\r\n", .{error_json.len});
+        try response.writer(self.allocator).print("HTTP/1.1 {d} {s}\r\n", .{ status_code, status_text });
+        try response.writer(self.allocator).print("Content-Type: application/json\r\n", .{});
+        try response.writer(self.allocator).print("Content-Length: {d}\r\n", .{error_json.len});
 
         if (self.config.cors_enabled) {
-            try response.writer().print("Access-Control-Allow-Origin: *\r\n", .{});
+            try response.writer(self.allocator).print("Access-Control-Allow-Origin: *\r\n", .{});
         }
 
-        try response.writer().print("\r\n", .{});
-        try response.writer().print("{s}", .{error_json});
+        try response.writer(self.allocator).print("\r\n", .{});
+        try response.writer(self.allocator).print("{s}", .{error_json});
 
         _ = try stream.writeAll(response.items);
     }
 
     fn sendResponse(self: *Server, stream: net.Stream, res: *Response) !void {
         // Build response string
-        var response = std.ArrayList(u8).init(self.allocator);
-        defer response.deinit();
+        var response: std.ArrayList(u8) = .empty;
+        defer response.deinit(self.allocator);
 
         const status_code = @intFromEnum(res.status_code);
         const status_text = @tagName(res.status_code);
 
         // Status line
-        try response.writer().print("HTTP/1.1 {d} {s}\r\n", .{ status_code, status_text });
+        try response.writer(self.allocator).print("HTTP/1.1 {d} {s}\r\n", .{ status_code, status_text });
 
         // Add default headers if not present
         if (!res.headers.contains("Server")) {
-            try response.writer().print("Server: Kamari-Zig/1.0\r\n", .{});
+            try response.writer(self.allocator).print("Server: Kamari-Zig/1.0\r\n", .{});
         }
         if (!res.headers.contains("Date")) {
             const timestamp = std.time.timestamp();
-            try response.writer().print("Date: {d}\r\n", .{timestamp});
+            try response.writer(self.allocator).print("Date: {d}\r\n", .{timestamp});
         }
 
         // Custom headers
         var header_iterator = res.headers.iterator();
         while (header_iterator.next()) |entry| {
-            try response.writer().print("{s}: {s}\r\n", .{ entry.key_ptr.*, entry.value_ptr.* });
+            try response.writer(self.allocator).print("{s}: {s}\r\n", .{ entry.key_ptr.*, entry.value_ptr.* });
         }
 
         // Content-Length header
         if (res.body) |body| {
-            try response.writer().print("Content-Length: {d}\r\n", .{body.len});
+            try response.writer(self.allocator).print("Content-Length: {d}\r\n", .{body.len});
         } else {
-            try response.writer().print("Content-Length: 0\r\n", .{});
+            try response.writer(self.allocator).print("Content-Length: 0\r\n", .{});
         }
 
         // Connection header
-        try response.writer().print("Connection: close\r\n", .{});
+        try response.writer(self.allocator).print("Connection: close\r\n", .{});
 
         // End of headers
-        try response.writer().print("\r\n", .{});
+        try response.writer(self.allocator).print("\r\n", .{});
 
         // Body
         if (res.body) |body| {
-            try response.writer().print("{s}", .{body});
+            try response.writer(self.allocator).print("{s}", .{body});
         }
 
         // Send the complete response

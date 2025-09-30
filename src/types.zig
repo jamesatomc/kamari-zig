@@ -92,12 +92,11 @@ pub const Response = struct {
     pub fn json(self: *Response, data: anytype) !void {
         _ = try self.header("Content-Type", "application/json");
 
-        var json_string = std.ArrayList(u8).init(self.allocator);
-        defer json_string.deinit();
+        var json_string: std.ArrayList(u8) = .empty;
+        defer json_string.deinit(self.allocator);
 
-        try std.json.stringify(data, .{}, json_string.writer());
-
-        self.body = try self.allocator.dupe(u8, json_string.items);
+        const owned = try std.json.Stringify.valueAlloc(self.allocator, data, .{});
+        self.body = owned;
         self.sent = true;
     }
 
